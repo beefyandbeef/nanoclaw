@@ -78,7 +78,7 @@ function buildVolumeMounts(
     mounts.push({
       hostPath: projectRoot,
       containerPath: '/workspace/project',
-      readonly: true,
+      readonly: false,
     });
 
     // Shadow .env so the agent cannot read secrets from the mounted project root.
@@ -221,6 +221,7 @@ function buildVolumeMounts(
 function buildContainerArgs(
   mounts: VolumeMount[],
   containerName: string,
+  groupModel?: string | null,
 ): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
 
@@ -244,9 +245,11 @@ function buildContainerArgs(
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
-  // Model selection (set AGENT_MODEL / AGENT_SMALL_MODEL in .env to override)
-  args.push('-e', `ANTHROPIC_MODEL=${AGENT_MODEL}`);
-  args.push('-e', `ANTHROPIC_SMALL_FAST_MODEL=${AGENT_SMALL_MODEL}`);
+  // Model selection: use group override if set, otherwise use global defaults
+  // (set AGENT_MODEL / AGENT_SMALL_MODEL in .env to override globally)
+  const agentModel = groupModel || AGENT_MODEL;
+  args.push('-e', `ANTHROPIC_MODEL=${agentModel}`);
+  args.push('-e', `ANTHROPIC_SMALL_FAST_MODEL=${agentModel}`);
 
   // Optional resource limits (set CONTAINER_MEMORY_LIMIT / CONTAINER_CPU_LIMIT in .env)
   if (CONTAINER_MEMORY_LIMIT) args.push('--memory', CONTAINER_MEMORY_LIMIT);
@@ -293,7 +296,7 @@ export async function runContainerAgent(
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
   const randomSuffix = Math.random().toString(36).slice(2, 8);
   const containerName = `nanoclaw-${safeName}-${Date.now()}-${randomSuffix}`;
-  const containerArgs = buildContainerArgs(mounts, containerName);
+  const containerArgs = buildContainerArgs(mounts, containerName, group.model);
 
   logger.debug(
     {

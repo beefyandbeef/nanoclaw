@@ -4,7 +4,13 @@ import path from 'path';
 import { DATA_DIR, IPC_POLL_INTERVAL } from './config.js';
 import { nextCronRun } from './schedule-utils.js';
 import { AvailableGroup } from './container-runner.js';
-import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
+import {
+  createTask,
+  deleteTask,
+  getTaskById,
+  setRegisteredGroupModel,
+  updateTask,
+} from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup } from './types.js';
@@ -170,6 +176,8 @@ export async function processTaskIpc(
     trigger?: string;
     requiresTrigger?: boolean;
     containerConfig?: RegisteredGroup['containerConfig'];
+    // For set_model / reset_model
+    model?: string;
   },
   sourceGroup: string, // Verified identity from IPC directory
   isMain: boolean, // Verified from directory path
@@ -438,6 +446,30 @@ export async function processTaskIpc(
           { data },
           'Invalid register_group request - missing required fields',
         );
+      }
+      break;
+
+    case 'set_model':
+      if (data.chatJid && data.model) {
+        setRegisteredGroupModel(data.chatJid, data.model);
+        logger.info(
+          { chatJid: data.chatJid, model: data.model },
+          'Set group model override',
+        );
+      } else {
+        logger.warn({ data }, 'Invalid set_model request - missing fields');
+      }
+      break;
+
+    case 'reset_model':
+      if (data.chatJid) {
+        setRegisteredGroupModel(data.chatJid, null);
+        logger.info(
+          { chatJid: data.chatJid },
+          'Reset group model to default',
+        );
+      } else {
+        logger.warn({ data }, 'Invalid reset_model request - missing chatJid');
       }
       break;
 

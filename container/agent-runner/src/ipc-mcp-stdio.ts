@@ -334,6 +334,49 @@ Use available_groups.json to find the JID for a group. The folder name must be c
   },
 );
 
+server.tool(
+  'set_model',
+  'Request to upgrade the model for this group. Useful when the current model hits its limits. Set model to "claude-sonnet-4-6" or "claude-opus-4-6" for harder tasks. Takes effect on the next message.',
+  {
+    model: z.string().describe('Model ID (e.g. "claude-sonnet-4-6", "claude-opus-4-6", or any valid Claude model)'),
+  },
+  async (args) => {
+    const data = {
+      type: 'set_model',
+      chatJid,
+      groupFolder,
+      model: args.model,
+      timestamp: new Date().toISOString(),
+    };
+
+    writeIpcFile(TASKS_DIR, data);
+
+    return {
+      content: [{ type: 'text' as const, text: `Model changed to ${args.model}. Takes effect on the next message.` }],
+    };
+  },
+);
+
+server.tool(
+  'reset_model',
+  'Reset the model for this group back to the default (usually claude-haiku-4-5 for cost savings).',
+  {},
+  async () => {
+    const data = {
+      type: 'reset_model',
+      chatJid,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    };
+
+    writeIpcFile(TASKS_DIR, data);
+
+    return {
+      content: [{ type: 'text' as const, text: 'Model reset to default. Takes effect on the next message.' }],
+    };
+  },
+);
+
 // Start the stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);

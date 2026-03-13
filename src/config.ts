@@ -63,13 +63,9 @@ export const CONTAINER_CPU_LIMIT = process.env.CONTAINER_CPU_LIMIT || ''; // e.g
 // AGENT_SMALL_MODEL: fast model for sub-agents and background tasks (default: same as AGENT_MODEL)
 // Set either in .env to override, e.g. AGENT_MODEL=claude-sonnet-4-6 for harder tasks.
 export const AGENT_MODEL =
-  process.env.AGENT_MODEL ||
-  envConfig.AGENT_MODEL ||
-  'claude-haiku-4-5';
+  process.env.AGENT_MODEL || envConfig.AGENT_MODEL || 'claude-haiku-4-5';
 export const AGENT_SMALL_MODEL =
-  process.env.AGENT_SMALL_MODEL ||
-  envConfig.AGENT_SMALL_MODEL ||
-  AGENT_MODEL; // fall back to main model if not set separately
+  process.env.AGENT_SMALL_MODEL || envConfig.AGENT_SMALL_MODEL || AGENT_MODEL; // fall back to main model if not set separately
 export const MAX_CONCURRENT_CONTAINERS = Math.max(
   1,
   parseInt(process.env.MAX_CONCURRENT_CONTAINERS || '5', 10) || 5,

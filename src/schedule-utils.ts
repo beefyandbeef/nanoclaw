@@ -9,6 +9,7 @@ import { TIMEZONE } from './config.js';
 export function nextCronRun(cronExpression: string): string {
   const interval = CronExpressionParser.parse(cronExpression, { tz: TIMEZONE });
   const iso = interval.next().toISOString();
-  if (!iso) throw new Error(`Cron expression produced no next date: ${cronExpression}`);
+  if (!iso)
+    throw new Error(`Cron expression produced no next date: ${cronExpression}`);
   return iso;
 }
