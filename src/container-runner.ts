@@ -7,8 +7,11 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  CONTAINER_CPU_LIMIT,
+  CONTAINER_GRACE_MS,
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
+  CONTAINER_MEMORY_LIMIT,
   CONTAINER_TIMEOUT,
   CREDENTIAL_PROXY_PORT,
   DATA_DIR,
@@ -124,8 +127,9 @@ function buildVolumeMounts(
   fs.mkdirSync(groupSessionsDir, { recursive: true });
   const settingsFile = path.join(groupSessionsDir, 'settings.json');
   if (!fs.existsSync(settingsFile)) {
+    const tempFile = settingsFile + '.tmp';
     fs.writeFileSync(
-      settingsFile,
+      tempFile,
       JSON.stringify(
         {
           env: {
@@ -144,17 +148,17 @@ function buildVolumeMounts(
         2,
       ) + '\n',
     );
+    fs.renameSync(tempFile, settingsFile);
   }
 
   // Sync skills from container/skills/ into each group's .claude/skills/
   const skillsSrc = path.join(process.cwd(), 'container', 'skills');
   const skillsDst = path.join(groupSessionsDir, 'skills');
   if (fs.existsSync(skillsSrc)) {
-    for (const skillDir of fs.readdirSync(skillsSrc)) {
-      const srcDir = path.join(skillsSrc, skillDir);
-      if (!fs.statSync(srcDir).isDirectory()) continue;
-      const dstDir = path.join(skillsDst, skillDir);
-      fs.cpSync(srcDir, dstDir, { recursive: true });
+    for (const entry of fs.readdirSync(skillsSrc, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const dstDir = path.join(skillsDst, entry.name);
+      fs.cpSync(path.join(skillsSrc, entry.name), dstDir, { recursive: true });
     }
   }
   mounts.push({
@@ -238,6 +242,10 @@ function buildContainerArgs(
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
+  // Optional resource limits (set CONTAINER_MEMORY_LIMIT / CONTAINER_CPU_LIMIT in .env)
+  if (CONTAINER_MEMORY_LIMIT) args.push('--memory', CONTAINER_MEMORY_LIMIT);
+  if (CONTAINER_CPU_LIMIT) args.push('--cpus', CONTAINER_CPU_LIMIT);
+
   // Runtime-specific args for host gateway resolution
   args.push(...hostGatewayArgs());
 
@@ -277,7 +285,8 @@ export async function runContainerAgent(
 
   const mounts = buildVolumeMounts(group, input.isMain);
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
-  const containerName = `nanoclaw-${safeName}-${Date.now()}`;
+  const randomSuffix = Math.random().toString(36).slice(2, 8);
+  const containerName = `nanoclaw-${safeName}-${Date.now()}-${randomSuffix}`;
   const containerArgs = buildContainerArgs(mounts, containerName);
 
   logger.debug(
@@ -403,9 +412,9 @@ export async function runContainerAgent(
     let timedOut = false;
     let hadStreamingOutput = false;
     const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
-    // Grace period: hard timeout must be at least IDLE_TIMEOUT + 30s so the
+    // Grace period: hard timeout must be at least IDLE_TIMEOUT + CONTAINER_GRACE_MS so the
     // graceful _close sentinel has time to trigger before the hard kill fires.
-    const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
+    const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + CONTAINER_GRACE_MS);
 
     const killOnTimeout = () => {
       timedOut = true;

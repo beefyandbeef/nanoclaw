@@ -48,6 +48,10 @@ export const CREDENTIAL_PROXY_PORT =
 export const IPC_POLL_INTERVAL = 1000;
 export const IDLE_TIMEOUT =
   parseInt(process.env.IDLE_TIMEOUT || '', 10) || 1800000; // 30min default — how long to keep container alive after last result
+export const CONTAINER_GRACE_MS =
+  parseInt(process.env.CONTAINER_GRACE_MS || '', 10) || 30_000; // Grace period between idle timeout and hard kill
+export const CONTAINER_MEMORY_LIMIT = process.env.CONTAINER_MEMORY_LIMIT || ''; // e.g. "2g", "512m" — empty = no limit
+export const CONTAINER_CPU_LIMIT = process.env.CONTAINER_CPU_LIMIT || ''; // e.g. "1.5" (cores) — empty = no limit
 export const MAX_CONCURRENT_CONTAINERS = Math.max(
   1,
   parseInt(process.env.MAX_CONCURRENT_CONTAINERS || '5', 10) || 5,

@@ -221,7 +221,8 @@ function parseTranscript(content: string): ParsedMessage[] {
         const text = textParts.join('');
         if (text) messages.push({ role: 'assistant', content: text });
       }
-    } catch {
+    } catch (err) {
+      log(`Skipping malformed transcript line: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

@@ -9,6 +9,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
+import { randomBytes } from 'crypto';
 import { CronExpressionParser } from 'cron-parser';
 
 const IPC_DIR = '/workspace/ipc';
@@ -130,7 +131,7 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
     // Non-main groups can only schedule for themselves
     const targetJid = isMain && args.target_group_jid ? args.target_group_jid : chatJid;
 
-    const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const taskId = `task-${Date.now()}-${randomBytes(6).toString('hex')}`;
 
     const data = {
       type: 'schedule_task',
