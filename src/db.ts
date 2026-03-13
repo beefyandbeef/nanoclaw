@@ -89,8 +89,8 @@ function createSchema(database: Database.Database): void {
     database.exec(
       `ALTER TABLE scheduled_tasks ADD COLUMN context_mode TEXT DEFAULT 'isolated'`,
     );
-  } catch {
-    /* column already exists */
+  } catch (err) {
+    if (!String(err).includes('duplicate column name')) throw err;
   }
 
   // Add is_bot_message column if it doesn't exist (migration for existing DBs)
@@ -102,8 +102,8 @@ function createSchema(database: Database.Database): void {
     database
       .prepare(`UPDATE messages SET is_bot_message = 1 WHERE content LIKE ?`)
       .run(`${ASSISTANT_NAME}:%`);
-  } catch {
-    /* column already exists */
+  } catch (err) {
+    if (!String(err).includes('duplicate column name')) throw err;
   }
 
   // Add is_main column if it doesn't exist (migration for existing DBs)
@@ -115,8 +115,8 @@ function createSchema(database: Database.Database): void {
     database.exec(
       `UPDATE registered_groups SET is_main = 1 WHERE folder = 'main'`,
     );
-  } catch {
-    /* column already exists */
+  } catch (err) {
+    if (!String(err).includes('duplicate column name')) throw err;
   }
 
   // Add channel and is_group columns if they don't exist (migration for existing DBs)
@@ -136,8 +136,8 @@ function createSchema(database: Database.Database): void {
     database.exec(
       `UPDATE chats SET channel = 'telegram', is_group = 1 WHERE jid LIKE 'tg:%'`,
     );
-  } catch {
-    /* columns already exist */
+  } catch (err) {
+    if (!String(err).includes('duplicate column name')) throw err;
   }
 }
 

@@ -1,9 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
-import { CronExpressionParser } from 'cron-parser';
-
-import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
+import { DATA_DIR, IPC_POLL_INTERVAL } from './config.js';
+import { nextCronRun } from './schedule-utils.js';
 import { AvailableGroup } from './container-runner.js';
 import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
@@ -40,10 +39,10 @@ export function startIpcWatcher(deps: IpcDeps): void {
     // Scan all group IPC directories (identity determined by directory)
     let groupFolders: string[];
     try {
-      groupFolders = fs.readdirSync(ipcBaseDir).filter((f) => {
-        const stat = fs.statSync(path.join(ipcBaseDir, f));
-        return stat.isDirectory() && f !== 'errors';
-      });
+      groupFolders = fs
+        .readdirSync(ipcBaseDir, { withFileTypes: true })
+        .filter((e) => e.isDirectory() && e.name !== 'errors')
+        .map((e) => e.name);
     } catch (err) {
       logger.error({ err }, 'Error reading IPC base directory');
       setTimeout(processIpcFiles, IPC_POLL_INTERVAL);
@@ -214,10 +213,7 @@ export async function processTaskIpc(
         let nextRun: string | null = null;
         if (scheduleType === 'cron') {
           try {
-            const interval = CronExpressionParser.parse(data.schedule_value, {
-              tz: TIMEZONE,
-            });
-            nextRun = interval.next().toISOString();
+            nextRun = nextCronRun(data.schedule_value);
           } catch {
             logger.warn(
               { scheduleValue: data.schedule_value },
@@ -363,11 +359,7 @@ export async function processTaskIpc(
           };
           if (updatedTask.schedule_type === 'cron') {
             try {
-              const interval = CronExpressionParser.parse(
-                updatedTask.schedule_value,
-                { tz: TIMEZONE },
-              );
-              updates.next_run = interval.next().toISOString();
+              updates.next_run = nextCronRun(updatedTask.schedule_value);
             } catch {
               logger.warn(
                 { taskId: data.taskId, value: updatedTask.schedule_value },

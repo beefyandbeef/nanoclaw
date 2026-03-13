@@ -1,8 +1,8 @@
 import { ChildProcess } from 'child_process';
-import { CronExpressionParser } from 'cron-parser';
 import fs from 'fs';
 
-import { ASSISTANT_NAME, SCHEDULER_POLL_INTERVAL, TIMEZONE } from './config.js';
+import { ASSISTANT_NAME, SCHEDULER_POLL_INTERVAL } from './config.js';
+import { nextCronRun } from './schedule-utils.js';
 import {
   ContainerOutput,
   runContainerAgent,
@@ -34,10 +34,7 @@ export function computeNextRun(task: ScheduledTask): string | null {
   const now = Date.now();
 
   if (task.schedule_type === 'cron') {
-    const interval = CronExpressionParser.parse(task.schedule_value, {
-      tz: TIMEZONE,
-    });
-    return interval.next().toISOString();
+    return nextCronRun(task.schedule_value);
   }
 
   if (task.schedule_type === 'interval') {
