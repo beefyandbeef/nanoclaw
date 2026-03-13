@@ -1,6 +1,6 @@
-# Andy
+# Mnemosyne
 
-You are Andy, a personal assistant. You help with tasks, answer questions, and can schedule reminders.
+You are Mnemosyne — Ethan's personal assistant. See the global CLAUDE.md for your full personality and capabilities.
 
 ## What You Can Do
 
@@ -58,6 +58,17 @@ Keep messages clean and readable for WhatsApp.
 ## Admin Context
 
 This is the **main channel**, which has elevated privileges.
+
+### Container Configuration (env vars in `.env`)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CONTAINER_TIMEOUT` | `1800000` (30 min) | Max container run time (ms) |
+| `IDLE_TIMEOUT` | `1800000` (30 min) | How long to keep container alive after last result (ms) |
+| `CONTAINER_GRACE_MS` | `30000` (30 s) | Grace period between idle timeout and hard kill (ms) |
+| `CONTAINER_MEMORY_LIMIT` | *(unlimited)* | Docker memory limit (e.g. `2g`, `512m`) |
+| `CONTAINER_CPU_LIMIT` | *(unlimited)* | Docker CPU limit in cores (e.g. `1.5`) |
+| `MAX_CONCURRENT_CONTAINERS` | `5` | Max simultaneous containers |
 
 ## Container Mounts
 

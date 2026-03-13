@@ -533,7 +533,33 @@ async function main(): Promise<void> {
       continue;
     }
     channels.push(channel);
-    await channel.connect();
+
+    // Connect with exponential backoff (1s, 2s, 4s, 8s, 16s — then give up)
+    const maxAttempts = 6;
+    let attempt = 0;
+    while (true) {
+      try {
+        await channel.connect();
+        logger.info({ channel: channelName }, 'Channel connected');
+        break;
+      } catch (err) {
+        attempt++;
+        if (attempt >= maxAttempts) {
+          logger.error(
+            { channel: channelName, err, attempt },
+            'Channel failed to connect after maximum retries — skipping',
+          );
+          channels.splice(channels.indexOf(channel), 1);
+          break;
+        }
+        const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 16000);
+        logger.warn(
+          { channel: channelName, err, attempt, delayMs },
+          'Channel connect failed, retrying after delay',
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
   }
   if (channels.length === 0) {
     logger.fatal('No channels connected');
