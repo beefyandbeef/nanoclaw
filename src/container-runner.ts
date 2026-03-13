@@ -7,6 +7,8 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  AGENT_MODEL,
+  AGENT_SMALL_MODEL,
   CONTAINER_CPU_LIMIT,
   CONTAINER_GRACE_MS,
   CONTAINER_IMAGE,
@@ -242,6 +244,10 @@ function buildContainerArgs(
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
+  // Model selection (set AGENT_MODEL / AGENT_SMALL_MODEL in .env to override)
+  args.push('-e', `ANTHROPIC_MODEL=${AGENT_MODEL}`);
+  args.push('-e', `ANTHROPIC_SMALL_FAST_MODEL=${AGENT_SMALL_MODEL}`);
+
   // Optional resource limits (set CONTAINER_MEMORY_LIMIT / CONTAINER_CPU_LIMIT in .env)
   if (CONTAINER_MEMORY_LIMIT) args.push('--memory', CONTAINER_MEMORY_LIMIT);
   if (CONTAINER_CPU_LIMIT) args.push('--cpus', CONTAINER_CPU_LIMIT);
@@ -414,7 +420,10 @@ export async function runContainerAgent(
     const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
     // Grace period: hard timeout must be at least IDLE_TIMEOUT + CONTAINER_GRACE_MS so the
     // graceful _close sentinel has time to trigger before the hard kill fires.
-    const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + CONTAINER_GRACE_MS);
+    const timeoutMs = Math.max(
+      configTimeout,
+      IDLE_TIMEOUT + CONTAINER_GRACE_MS,
+    );
 
     const killOnTimeout = () => {
       timedOut = true;

@@ -69,6 +69,8 @@ This is the **main channel**, which has elevated privileges.
 | `CONTAINER_MEMORY_LIMIT` | *(unlimited)* | Docker memory limit (e.g. `2g`, `512m`) |
 | `CONTAINER_CPU_LIMIT` | *(unlimited)* | Docker CPU limit in cores (e.g. `1.5`) |
 | `MAX_CONCURRENT_CONTAINERS` | `5` | Max simultaneous containers |
+| `AGENT_MODEL` | `claude-haiku-4-5` | Primary model for agent turns (e.g. `claude-sonnet-4-6` for harder tasks) |
+| `AGENT_SMALL_MODEL` | *(same as AGENT_MODEL)* | Fast model for sub-agents and background tasks |
 
 ## Container Mounts
 

@@ -6,7 +6,12 @@ import { readEnvFile } from './env.js';
 // Read config values from .env (falls back to process.env).
 // Secrets (API keys, tokens) are NOT read here — they are loaded only
 // by the credential proxy (credential-proxy.ts), never exposed to containers.
-const envConfig = readEnvFile(['ASSISTANT_NAME', 'ASSISTANT_HAS_OWN_NUMBER']);
+const envConfig = readEnvFile([
+  'ASSISTANT_NAME',
+  'ASSISTANT_HAS_OWN_NUMBER',
+  'AGENT_MODEL',
+  'AGENT_SMALL_MODEL',
+]);
 
 export const ASSISTANT_NAME =
   process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'Andy';
@@ -52,6 +57,19 @@ export const CONTAINER_GRACE_MS =
   parseInt(process.env.CONTAINER_GRACE_MS || '', 10) || 30_000; // Grace period between idle timeout and hard kill
 export const CONTAINER_MEMORY_LIMIT = process.env.CONTAINER_MEMORY_LIMIT || ''; // e.g. "2g", "512m" — empty = no limit
 export const CONTAINER_CPU_LIMIT = process.env.CONTAINER_CPU_LIMIT || ''; // e.g. "1.5" (cores) — empty = no limit
+
+// Model selection — controls which Claude model runs inside agent containers.
+// AGENT_MODEL:       primary model for all agent turns (default: claude-haiku-4-5)
+// AGENT_SMALL_MODEL: fast model for sub-agents and background tasks (default: same as AGENT_MODEL)
+// Set either in .env to override, e.g. AGENT_MODEL=claude-sonnet-4-6 for harder tasks.
+export const AGENT_MODEL =
+  process.env.AGENT_MODEL ||
+  envConfig.AGENT_MODEL ||
+  'claude-haiku-4-5';
+export const AGENT_SMALL_MODEL =
+  process.env.AGENT_SMALL_MODEL ||
+  envConfig.AGENT_SMALL_MODEL ||
+  AGENT_MODEL; // fall back to main model if not set separately
 export const MAX_CONCURRENT_CONTAINERS = Math.max(
   1,
   parseInt(process.env.MAX_CONCURRENT_CONTAINERS || '5', 10) || 5,
